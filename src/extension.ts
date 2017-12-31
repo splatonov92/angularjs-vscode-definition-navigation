@@ -1,6 +1,28 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import { ETIME } from 'constants';
+import { workspace } from 'vscode';
+
+const ignore = [
+  'build/**/*',
+  'out/**/*',
+  'dist/**/*',
+  'typings',
+  'out',
+  '.vscode',
+  '.history'
+];
+
+const ignoreWorkspace = [
+  ...ignore,
+  'node_modules/**/*',
+  'bower_components/**/*'
+];
+
+function toCamelCase(str) {
+  return str.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); }); 
+} 
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -10,22 +32,6 @@ export function activate(context: vscode.ExtensionContext) {
   // Now provide the implementation of the command with registerCommand
   // The commandId parameter must match the command field in package.json
   let disposable = vscode.commands.registerCommand('extension.sayHello', async () => {
-      // The code you place here will be executed every time your command is executed
-      const ignore = [
-        'build/**/*',
-        'out/**/*',
-        'dist/**/*',
-        'typings',
-        'out',
-        '.vscode',
-        '.history'
-      ];
-
-      const ignoreWorkspace = [
-        ...ignore,
-        'node_modules/**/*',
-        'bower_components/**/*'
-      ];
 
       // Display a message box to the user
       const workspaceFiles = await vscode.workspace.findFiles("{**/*.js,**/*.ts,**/*.html}", `{${ignoreWorkspace.join(',')}}`);
@@ -44,7 +50,26 @@ export function activate(context: vscode.ExtensionContext) {
     }
     
     const selection = editor.selection;
-    const text = editor.document.getText();
+    const text = toCamelCase(editor.document.getText(selection));
+    const workspaceFiles = await vscode.workspace.findFiles("{**/*.js,**/*.ts,**/*.html}", `{${ignoreWorkspace.join(',')}}`);
+    let directiveFile: vscode.Uri = null;
+
+    workspaceFiles.forEach(async file => {
+      const fileName = file.fsPath;
+      console.log('process filename', fileName);
+      const document = await vscode.workspace.openTextDocument(file);
+      const content = document.getText();
+      if (content.indexOf(text) >= 0) {
+        directiveFile = file;
+        console.log('find', text, 'in', fileName);
+        if (null != directiveFile) {
+          console.log('open file', directiveFile)
+          vscode.window.showTextDocument(directiveFile);
+        }
+      }
+    });
+
+
     vscode.window.showInformationMessage(`Selected text: ${text}`);
   });
 
