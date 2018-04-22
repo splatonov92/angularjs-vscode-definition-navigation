@@ -20,28 +20,21 @@ const ignoreWorkspace = [
   'bower_components/**/*'
 ];
 
+const extensions = "{**/*.js,**/*.ts}";
+const ignoreWorkspaceList = ignoreWorkspace.join(',');
+
 function toCamelCase(str) {
   return str.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); }); 
 } 
+
+function 
 
 export function activate(context: vscode.ExtensionContext) {
 
   console.log('Extension "angularjs-definition-navigation" is now active!');
 
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with registerCommand
-  // The commandId parameter must match the command field in package.json
-  let disposable = vscode.commands.registerCommand('extension.sayHello', async () => {
-
-      // Display a message box to the user
-      const workspaceFiles = await vscode.workspace.findFiles("{**/*.js,**/*.ts,**/*.html}", `{${ignoreWorkspace.join(',')}}`);
-
-      console.log('test => ', workspaceFiles);
-
-      vscode.window.showInformationMessage('Hello World!');
-  });
-
   let goToDefinition = vscode.commands.registerCommand('extension.goToDefinition', async () => {
+
     const editor = vscode.window.activeTextEditor;
 
     if (!editor) {
@@ -51,18 +44,21 @@ export function activate(context: vscode.ExtensionContext) {
     
     const selection = editor.selection;
     const text = toCamelCase(editor.document.getText(selection));
-    const workspaceFiles = await vscode.workspace.findFiles("{**/*.js,**/*.ts,**/*.html}", `{${ignoreWorkspace.join(',')}}`);
-    let directiveFile: vscode.Uri = null;
+    const workspaceFiles = await vscode.workspace.findFiles(extensions, `{${ignoreWorkspaceList}}`);
 
     workspaceFiles.forEach(async file => {
+      
       const fileName = file.fsPath;
       console.log('process filename', fileName);
       const document = await vscode.workspace.openTextDocument(file);
       const content = document.getText();
+
       if (content.indexOf(text) >= 0) {
-        directiveFile = file;
+        const directiveFile = file;
         console.log('find', text, 'in', fileName);
+      
         if (null != directiveFile) {
+      
           console.log('open file', directiveFile)
           vscode.window.showTextDocument(directiveFile);
         }
@@ -73,7 +69,6 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.showInformationMessage(`Selected text: ${text}`);
   });
 
-  context.subscriptions.push(disposable);
   context.subscriptions.push(goToDefinition);
 }
 
