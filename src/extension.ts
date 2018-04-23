@@ -2,23 +2,8 @@
 
 import * as vscode from 'vscode';
 import { ETIME } from 'constants';
-import { workspace } from 'vscode';
-
-const ignore = [
-  'build/**/*',
-  'out/**/*',
-  'dist/**/*',
-  'typings',
-  'out',
-  '.vscode',
-  '.history'
-];
-
-const ignoreWorkspace = [
-  ...ignore,
-  'node_modules/**/*',
-  'bower_components/**/*'
-];
+import { workspace, Uri } from 'vscode';
+import { ignoreWorkspace } from './conig';
 
 const extensions = "{**/*.js,**/*.ts}";
 const ignoreWorkspaceList = ignoreWorkspace.join(',');
@@ -27,11 +12,49 @@ function toCamelCase(str) {
   return str.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); }); 
 } 
 
-function 
+function toSnakeCase(str) {
+  return str.replace(/([A-Z])/g, function (g) { return '-' + g[0].toLowerCase(); }); 
+}
 
-export function activate(context: vscode.ExtensionContext) {
+type DirectiveFile = {
+  name: string;
+  file: vscode.Uri;
+}
+
+let filesCache: Array<DirectiveFile> = [];
+
+async function analyseAndCacheFiles() {
+
+  const workspaceFiles = await vscode.workspace.findFiles(extensions, `{${ignoreWorkspaceList}}`);
+
+  workspaceFiles.forEach(async file => {
+    const filepath = file.fsPath;
+    const document = await vscode.workspace.openTextDocument(file);
+    const content = document.getText();
+    const directiveMatches = content.match(/directive\(["']([a-zA-Z]*)["']/g);
+    const componentMatches = content.match(/component\(["']([a-zA-Z]*)["']/g);
+    
+    if (directiveMatches != null) {
+      for (const key of directiveMatches) {
+        const match = key.match(/directive\(["']([a-zA-Z]*)["']/);
+        filesCache.push({ name: toSnakeCase(match[1]), file });
+      }
+    }
+    
+    if (componentMatches != null) {
+      for (const key of componentMatches) {
+        const match = key.match(/component\(["']([a-zA-Z]*)["']/);
+        filesCache.push({ name: toSnakeCase(match[1]), file });
+      }
+    }
+  });
+}
+
+export async function activate(context: vscode.ExtensionContext) {
 
   console.log('Extension "angularjs-definition-navigation" is now active!');
+
+  await analyseAndCacheFiles();
 
   let goToDefinition = vscode.commands.registerCommand('extension.goToDefinition', async () => {
 
@@ -43,28 +66,13 @@ export function activate(context: vscode.ExtensionContext) {
     }
     
     const selection = editor.selection;
-    const text = toCamelCase(editor.document.getText(selection));
+    const text = editor.document.getText(selection);
     const workspaceFiles = await vscode.workspace.findFiles(extensions, `{${ignoreWorkspaceList}}`);
 
-    workspaceFiles.forEach(async file => {
-      
-      const fileName = file.fsPath;
-      console.log('process filename', fileName);
-      const document = await vscode.workspace.openTextDocument(file);
-      const content = document.getText();
-
-      if (content.indexOf(text) >= 0) {
-        const directiveFile = file;
-        console.log('find', text, 'in', fileName);
-      
-        if (null != directiveFile) {
-      
-          console.log('open file', directiveFile)
-          vscode.window.showTextDocument(directiveFile);
-        }
-      }
-    });
-
+    const file = filesCache.find(f => f.name.indexOf(text) >= 0);
+    if (file != null) {
+      vscode.window.showTextDocument(file.file);
+    }
 
     vscode.window.showInformationMessage(`Selected text: ${text}`);
   });
