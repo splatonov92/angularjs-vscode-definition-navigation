@@ -1,7 +1,7 @@
 {
     "name": "angularjs-definition-navigation",
     "displayName": "angularjs-definition-navigation",
-    "description": "Navigation to definition of directives, components, controllers",
+    "description": "Find to definition of directives and components, open file after find",
     "version": "0.0.1",
     "publisher": "angularjs-definition-navigation",
     "engines": {
@@ -11,19 +11,14 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.sayHello",
-        "onCommand:extension.goToDefinition"
+        "*"
     ],
     "main": "./out/extension",
     "contributes": {
         "commands": [
             {
-                "command": "extension.sayHello",
-                "title": "Hello World"
-            },
-            {
-                "command": "extension.goToDefinition",
-                "title": "Go to definition"
+                "command": "extension.findDefinition",
+                "title": "Find definition"
             }
         ]
     },
