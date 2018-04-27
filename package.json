@@ -20,7 +20,27 @@
                 "command": "extension.findDefinition",
                 "title": "Find definition"
             }
-        ]
+        ],
+        "configuration": {
+            "type": "object",
+            "title": "AngularJS find defeinition configuration",
+            "properties": {
+                "angularJSfd.ignoreDirs": {
+                    "type": "array",
+                    "default": [
+                        "**/build/**/*",
+                        "**/out/**/*",
+                        "**/dist/**/*",
+                        "**/typings",
+                        "**/out",
+                        "**/target/**",
+                        ".vscode",
+                        ".history"
+                    ],
+                    "description": "Directories and files (their patterns) are excluded from parsing for find definition"
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

@@ -1,10 +1,8 @@
 import * as vscode from 'vscode';
-import { ignoreWorkspace } from './config';
 import { toSnakeCase } from './utils';
 import { DirectiveFile } from './types';
 
 const extensions = "{**/*.js,**/*.ts}";
-const ignoreWorkspaceList = ignoreWorkspace.join(',');
 const DIRECTIVE_REGEX = /directive\(["']([a-zA-Z]*)["']/;
 const COMPONENT_REGEX = /component\(["']([a-zA-Z]*)["']/;
 
@@ -38,12 +36,6 @@ async function findDefinitionInFileAndCache(file: vscode.Uri) {
   }
 }
 
-export async function analyseAndCacheFiles() {
-
-  const workspaceFiles = await vscode.workspace.findFiles(extensions, `{${ignoreWorkspaceList}}`);
-  workspaceFiles.forEach(findDefinitionInFileAndCache);
-}
-
 function setCursorToLine(editor: vscode.TextEditor, lineNumber: number) {
 
   let range = editor.document.lineAt(lineNumber).range;
@@ -51,8 +43,20 @@ function setCursorToLine(editor: vscode.TextEditor, lineNumber: number) {
   editor.revealRange(range);
 }
 
+export async function analyseAndCacheFiles() {
+
+  const config = vscode.workspace.getConfiguration('angularJSfd');
+  const ignoreWorkspace = config.ignoreDirs;
+  const ignoreWorkspaceList = ignoreWorkspace.join(',');
+  const workspaceFiles = await vscode.workspace.findFiles(extensions, `{${ignoreWorkspaceList}}`);
+  workspaceFiles.forEach(findDefinitionInFileAndCache);
+}
+
 export async function findDefinitionExt() {
 
+  const config = vscode.workspace.getConfiguration('angularJSfd');
+  const ignoreWorkspace = config.ignoreDirs;
+  const ignoreWorkspaceList = ignoreWorkspace.join(',');
   const editor = vscode.window.activeTextEditor;
 
   if (!editor) {
