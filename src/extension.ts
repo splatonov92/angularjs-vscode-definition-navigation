@@ -1,13 +1,25 @@
 import * as vscode from 'vscode';
-import { analyseAndCacheFiles, findDefinitionExt } from './find.definition.ext';
-import { SIGCONT } from 'constants';
+import { FindDefinitionExt } from './find.definition.ext';
 
 export async function activate(context: vscode.ExtensionContext) {
 
-  analyseAndCacheFiles();
+  const extension = new FindDefinitionExt();
+  extension.showOutputMessage();
+  extension.analyseAndCacheFiles();
 
-  context.subscriptions
-    .push(vscode.commands.registerCommand('extension.findDefinition', findDefinitionExt));
+  vscode.workspace.onDidChangeConfiguration(() => {
+    let disposeStatus = extension.showStatusMessage('FindDefinition: Reloading config.');
+    extension.loadConfig();
+    disposeStatus.dispose();
+  });
+
+  vscode.commands.registerCommand('extension.findDefinition', () => {
+    extension.findDefinition()
+  });
+
+  vscode.workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
+    extension.analyzeAndCacheFile(document);
+  });
 }
 
 // this method is called when your extension is deactivated
