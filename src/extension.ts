@@ -10,6 +10,7 @@ export async function activate(context: vscode.ExtensionContext) {
   vscode.workspace.onDidChangeConfiguration(() => {
     let disposeStatus = extension.showStatusMessage('FindDefinition: Reloading config.');
     extension.loadConfig();
+    extension.analyseAndCacheFiles();
     disposeStatus.dispose();
   });
 

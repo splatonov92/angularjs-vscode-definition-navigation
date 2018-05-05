@@ -3,6 +3,7 @@ import { toSnakeCase } from './utils';
 import { IDirectiveFile, IConfig } from './types';
 import { isContext } from 'vm';
 
+const EXTENSION_NAME = 'angularJSfd';
 const extensions = "{**/*.js,**/*.ts}";
 const DIRECTIVE_REGEX = /directive\(["']([a-zA-Z0-9]*)["']/;
 const COMPONENT_REGEX = /component\(["']([a-zA-Z0-9]*)["']/;
@@ -52,13 +53,10 @@ async function findDefinitionInFileAndCache(file: vscode.Uri) {
   const lineCount = document.lineCount;
 
   for (let i = 0; i < lineCount; i++) {
-
-    setTimeout(() => {
-      const line = document.lineAt(i).text;
-      checkAndCacheLine(DIRECTIVE_REGEX, line, i, file, toSnakeCase);
-      checkAndCacheLine(COMPONENT_REGEX, line, i, file, toSnakeCase);
-      checkAndCacheLine(CONTROLLER_REGEX, line, i, file, returnInput);
-    }, 0);
+    const line = document.lineAt(i).text;
+    checkAndCacheLine(DIRECTIVE_REGEX, line, i, file, toSnakeCase);
+    checkAndCacheLine(COMPONENT_REGEX, line, i, file, toSnakeCase);
+    checkAndCacheLine(CONTROLLER_REGEX, line, i, file, returnInput);
   }
 }
 
@@ -70,7 +68,7 @@ function setCursorToLine(editor: vscode.TextEditor, lineNumber: number) {
 }
 
 function getIgnoredFileList() {
-  const config = vscode.workspace.getConfiguration('angularJSfd');
+  const config = vscode.workspace.getConfiguration(EXTENSION_NAME);
   const ignoreWorkspace = config.ignoreDirs;
   return ignoreWorkspace.join(',');
 }
@@ -87,18 +85,10 @@ export class FindDefinitionExt {
 
   public loadConfig(): void {
 
-    const config = vscode.workspace.getConfiguration('angularJSfd');
-    const ignoreWorkspace = config.ignoreDirs;
-    const ignoreWorkspaceList = ignoreWorkspace.join(',');
+    const ignoreWorkspaceList = getIgnoredFileList();
 
     if (ignoreWorkspaceList != this.config.ignoreWorkspaceList) {
-
-      this.config = {
-        ignoreWorkspaceList: ignoreWorkspace.join(',')
-      };
-
-      filesCache = [];
-      this.analyseAndCacheFiles();
+      this.config = { ignoreWorkspaceList };
     }
   }
 
@@ -118,7 +108,7 @@ export class FindDefinitionExt {
 
     const selection = editor.selection;
     const text = editor.document.getText(selection);
-    const file = filesCache.find(f => f.name.indexOf(text) >= 0);
+    const file = filesCache.find(f => f.name === text);
 
     if (file != null) {
       await vscode.window.showTextDocument(file.file);
@@ -130,22 +120,16 @@ export class FindDefinitionExt {
 
   public async analyseAndCacheFiles() {
 
+    filesCache = [];
     const ignoreWorkspaceList = this.config.ignoreWorkspaceList;
     const workspaceFiles = await vscode.workspace.findFiles(extensions, `{${ignoreWorkspaceList}}`);
     workspaceFiles.forEach(findDefinitionInFileAndCache);
   }
 
-  /**
-   * Show message in output channel
-   */
   public showOutputMessage(message?: string): void {
     this.outputChannel.appendLine(message);
   }
 
-  /**
-   * Show message in status bar and output channel.
-   * Return a disposable to remove status bar message.
-   */
   public showStatusMessage(message: string): vscode.Disposable {
     this.showOutputMessage(message);
     return vscode.window.setStatusBarMessage(message);
